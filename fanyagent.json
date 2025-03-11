@@ -1,0 +1,316 @@
+{
+  "name": "fanyagent",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -80,
+        40
+      ],
+      "id": "11671794-ddb1-4d2a-9eb7-666ece5cea28",
+      "name": "Chat",
+      "webhookId": "ba3776ed-2406-4189-afc2-87a1f90c3822"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dffdce74-4bd8-4a2a-848a-33dfd090288b",
+              "name": "usuario",
+              "value": "=Ricardo",
+              "type": "string"
+            },
+            {
+              "id": "4e79722f-23dc-40b3-93f6-5114889f2f90",
+              "name": "chatInput",
+              "value": "={{ $json.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "1d96644e-d14f-4c16-914f-fc058591fe45",
+              "name": "sessionId",
+              "value": "={{ $json.sessionId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        160,
+        40
+      ],
+      "id": "845ef1bd-dc72-4ca5-afc7-ea2798cd4d11",
+      "name": "usuario"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash-001",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        220,
+        240
+      ],
+      "id": "2947a347-f697-4289-a50a-510d0e5d59c0",
+      "name": "Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "sy3Js58bYOpGFuit",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "Você é um assistente virtual com acesso a diversas ferramentas para auxiliar os usuários.\n\n## Descrição das Ferramentas (tools):\n\n-   **rag_memoria:** Permite acessar informações de conversas (seções) anteriores.\n-   **armazena_memoria:** Permite criar ou atualizar uma memória de seção.\n* Instruções detalhadas de uso na 'Description' de cada ferramenta\n\n## Instruções Gerais:\n\n1.  **Priorize a busca em rag_memoria:** Se você não souber a resposta para uma pergunta, antes de responder que não sabe ou pedir mais informações ao usuário, siga as instruções na 'Description' de rag_memoria. Analise os resultados da busca, priorize as informações relevantes e combine-as em uma resposta clara e concisa.\n2.  **Armazene informações relevantes:** Sempre que pertinente, siga as instruções na 'Description' de armazena_memoria para criar ou atualizar a memória de seção. Preste atenção especial às preferências expressas pelo usuário, como nomes preferidos, gostos e aversões, e utilize a ferramenta `armazena_memoria` para registrá-las.\n3.  Responda que não sabe ou peça mais informações somente se necessário."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        440,
+        0
+      ],
+      "id": "2c0a0e14-0126-4d10-9b9f-5dc73ef09d55",
+      "name": "Agente_Fanya"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.sessionId }}",
+        "tableName": "chat_historico",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        340,
+        240
+      ],
+      "id": "8c51e716-bead-452f-a09e-65c94e294683",
+      "name": "Memoria",
+      "credentials": {
+        "postgres": {
+          "id": "SalbNlZHCmfksUuw",
+          "name": "Postgres_Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "armazena_memoria",
+        "description": "1.  **Crie um input 'memoria':** Utilize a ferramenta para criar ou atualizar um markdown na memória de seção. O input para essa ferramenta deve ser chamado de 'memoria'.\n2.  **Armazene informações novas e relevantes:** O input 'memoria' deve conter informações fornecidas pelo usuário que você não tinha conhecimento prévio. Inclua detalhes importantes da conversa, como:\n    *   **Preferências do usuário:** Registre todas as preferências expressas, como nomes preferidos (ex: '* Nome preferido: Rick'), gostos (ex: '* Preferência: Restaurantes com música ao vivo') e aversões (ex: '* Aversão: Comida apimentada').\n    *   Informações de contexto (ex: '* Restaurante: Bella Itália').\n    *   Outros dados úteis (ex: '* Alergia: Frutos do mar').\n    *   **Sempre que o usuário expressar uma preferência, utilize a ferramenta `armazena_memoria` para registrá-la.**\n3.  **Atualize a memória:** Se a memória de seção já existir, adicione as novas informações relevantes.\n\n**Importante:** O input 'memoria' deve conter apenas as informações novas fornecidas pelo usuário.",
+        "workflowId": {
+          "__rl": true,
+          "value": "gKYt3StosfVMLp9p",
+          "mode": "list",
+          "cachedResultName": "Fanya — armazena_memoria"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "usuario": "={{ $json.usuario }}",
+            "sessionId": "={{ $json.sessionId }}",
+            "memoria": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('memoria', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "usuario",
+              "displayName": "usuario",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "memoria",
+              "displayName": "memoria",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        520,
+        240
+      ],
+      "id": "76fbf4d6-abc9-47a0-9d29-eae9d482492f",
+      "name": "armazena_memoria"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolName": "rag_memoria",
+        "toolDescription": "1.  **Busque informações relevantes:** Utilize a ferramenta para buscar mensagens relevantes em `rag_memoria`.\n2.  **Analise e priorize:** Examine os resultados da busca, focando nas informações que respondem à pergunta do usuário.\n3.  **Responda à pergunta:** Utilize as informações encontradas para fornecer uma resposta clara e concisa ao usuário.\n\n## Exemplo:\n\n**Usuário:** \"Qual é a capital da França?\"\n\n**Agente:** (Verifica se possui a informação. Não possui.)\n\n(Utiliza a ferramenta `rag_memoria` para buscar em `rag_memoria`.)\n\n(Encontra a informação: \"A capital da França é Paris.\")\n\n**Agente:** \"A capital da França é Paris.\"",
+        "tableName": "rag_memoria",
+        "topK": 5,
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "usuario",
+                "value": "={{ $('usuario').item.json.usuario }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1,
+      "position": [
+        760,
+        180
+      ],
+      "id": "7667b459-ac5f-4878-a65a-ebcaedb3e08a",
+      "name": "rag_memoria",
+      "credentials": {
+        "postgres": {
+          "id": "SalbNlZHCmfksUuw",
+          "name": "Postgres_Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/text-embedding-004"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        880,
+        280
+      ],
+      "id": "01dde430-5877-4414-b08b-49eb94a4bb5a",
+      "name": "embedding_Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "sy3Js58bYOpGFuit",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Chat": {
+      "main": [
+        [
+          {
+            "node": "usuario",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "usuario": {
+      "main": [
+        [
+          {
+            "node": "Agente_Fanya",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente_Fanya",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memoria": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agente_Fanya",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "armazena_memoria": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente_Fanya",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "rag_memoria": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente_Fanya",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "embedding_Gemini": {
+      "ai_embedding": [
+        [
+          {
+            "node": "rag_memoria",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "535a59d6-45f6-4b1b-832a-066fb72123a7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "22c369649ec2dd9683616dd9b552ef417417993d72f05d02349adbd045ce12fb"
+  },
+  "id": "KSMyURRVv9RoyVVd",
+  "tags": []
+}
