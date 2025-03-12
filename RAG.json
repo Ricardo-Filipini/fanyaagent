@@ -1,0 +1,242 @@
+{
+  "name": "RAG",
+  "nodes": [
+    {
+      "parameters": {
+        "modelName": "models/text-embedding-004"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        360,
+        220
+      ],
+      "id": "0d4c8c53-eb91-4360-96d7-842bcd520b89",
+      "name": "embedding_Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "sy3Js58bYOpGFuit",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": "rag",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1,
+      "position": [
+        520,
+        20
+      ],
+      "id": "fc68f02c-411b-4d07-8638-a3c29b3514a5",
+      "name": "salva_rag",
+      "credentials": {
+        "postgres": {
+          "id": "SalbNlZHCmfksUuw",
+          "name": "Postgres_Supabase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "rag"
+            },
+            {
+              "name": "rag_id"
+            },
+            {
+              "name": "usuario"
+            },
+            {
+              "name": "tags",
+              "type": "array"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        100,
+        20
+      ],
+      "id": "0aa78a7c-f8bc-48a5-a855-b0ea22bf0673",
+      "name": "input_rag"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DELETE FROM rag WHERE metadata->>'rag_id' LIKE '%' || $1 || '%'",
+        "options": {
+          "queryReplacement": "={{ $json.rag_id }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        300,
+        20
+      ],
+      "id": "be771677-6e00-45e4-b592-e8b4307001bd",
+      "name": "deleta_antigo",
+      "credentials": {
+        "postgres": {
+          "id": "SalbNlZHCmfksUuw",
+          "name": "Postgres_Supabase"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $('input_rag').item.json.rag }}",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "usuario",
+                "value": "={{ $('input_rag').item.json.usuario }}"
+              },
+              {
+                "name": "timestamp",
+                "value": "={{ Date.now() }}"
+              },
+              {
+                "name": "rag_id",
+                "value": "={{ $('input_rag').item.json.rag_id }}"
+              },
+              {
+                "name": "tags",
+                "value": "={{ $('input_rag').item.json.tags}}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        540,
+        200
+      ],
+      "id": "582df486-3d19-4b75-bf45-5cbce9117b28",
+      "name": "carrega_rag"
+    },
+    {
+      "parameters": {
+        "chunkSize": 400,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        560,
+        340
+      ],
+      "id": "a8d21c76-95a4-49c9-a847-3665654cc56a",
+      "name": "quebra_rag"
+    }
+  ],
+  "pinData": {
+    "input_rag": [
+      {
+        "json": {
+          "rag": "*nome: Ricardo",
+          "rag_id": "94e5e3ed39294b969eb8f8506ff0e5ff",
+          "usuario": "Ricardo",
+          "tags": [
+            "informações pessoais"
+          ]
+        }
+      }
+    ]
+  },
+  "connections": {
+    "embedding_Gemini": {
+      "ai_embedding": [
+        [
+          {
+            "node": "salva_rag",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "salva_rag": {
+      "main": [
+        []
+      ]
+    },
+    "input_rag": {
+      "main": [
+        [
+          {
+            "node": "deleta_antigo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "deleta_antigo": {
+      "main": [
+        [
+          {
+            "node": "salva_rag",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "carrega_rag": {
+      "ai_document": [
+        [
+          {
+            "node": "salva_rag",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "quebra_rag": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "carrega_rag",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ab1bfdaf-9672-4f71-9328-7994df87d125",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "22c369649ec2dd9683616dd9b552ef417417993d72f05d02349adbd045ce12fb"
+  },
+  "id": "yXNQLvmtaWMIlL1z",
+  "tags": [
+    {
+      "createdAt": "2025-03-11T16:15:33.384Z",
+      "updatedAt": "2025-03-11T16:15:33.384Z",
+      "id": "ZkR1o3QuT1aF3x4J",
+      "name": "memoria"
+    }
+  ]
+}

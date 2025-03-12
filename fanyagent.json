@@ -8,8 +8,8 @@
       "type": "@n8n/n8n-nodes-langchain.chatTrigger",
       "typeVersion": 1.1,
       "position": [
-        -80,
-        40
+        20,
+        -60
       ],
       "id": "11671794-ddb1-4d2a-9eb7-666ece5cea28",
       "name": "Chat",
@@ -36,6 +36,12 @@
               "name": "sessionId",
               "value": "={{ $json.sessionId }}",
               "type": "string"
+            },
+            {
+              "id": "8915431b-4ff3-4a65-8506-0047a54489fb",
+              "name": "rag_secao",
+              "value": "={{ $json.rag_secao }}",
+              "type": "string"
             }
           ]
         },
@@ -44,8 +50,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        160,
-        40
+        720,
+        0
       ],
       "id": "845ef1bd-dc72-4ca5-afc7-ea2798cd4d11",
       "name": "usuario"
@@ -58,8 +64,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
       "position": [
-        220,
-        240
+        500,
+        280
       ],
       "id": "2947a347-f697-4289-a50a-510d0e5d59c0",
       "name": "Gemini",
@@ -75,14 +81,14 @@
         "promptType": "define",
         "text": "={{ $json.chatInput }}",
         "options": {
-          "systemMessage": "Você é um assistente virtual com acesso a diversas ferramentas para auxiliar os usuários.\n\n## Descrição das Ferramentas (tools):\n\n-   **rag_memoria:** Permite acessar informações de conversas (seções) anteriores.\n-   **armazena_memoria:** Permite criar ou atualizar uma memória de seção.\n* Instruções detalhadas de uso na 'Description' de cada ferramenta\n\n## Instruções Gerais:\n\n1.  **Priorize a busca em rag_memoria:** Se você não souber a resposta para uma pergunta, antes de responder que não sabe ou pedir mais informações ao usuário, siga as instruções na 'Description' de rag_memoria. Analise os resultados da busca, priorize as informações relevantes e combine-as em uma resposta clara e concisa.\n2.  **Armazene informações relevantes:** Sempre que pertinente, siga as instruções na 'Description' de armazena_memoria para criar ou atualizar a memória de seção. Preste atenção especial às preferências expressas pelo usuário, como nomes preferidos, gostos e aversões, e utilize a ferramenta `armazena_memoria` para registrá-las.\n3.  Responda que não sabe ou peça mais informações somente se necessário."
+          "systemMessage": "=Você é um agente de IA com acesso a ferramentas para auxiliar o usuário. Utilize as ferramentas disponíveis para responder às perguntas e realizar as tarefas solicitadas. Quando necessário, utilize a ferramenta \"rag\" para buscar informações na base de conhecimento. Antes de fazer perguntas ao usuário ou solicitar informações adicionais, SEMPRE utilize a ferramenta \"rag\" para buscar informações relevantes na base de conhecimento. Se obtiver novas informações, utilize a ferramenta \"salva_rag\" para armazenar um rag.\n\n**Além do prompt (User Message) você tem outras informações como:\n-usuario: {{ $json.usuario }}\n-sessionId: {{ $json.sessionId }}\n\n**Exemplo 1:\nUsuário: \"Qual é a minha fruta favorita?\"\nAgente: (Não sabe a resposta)\nAgente utiliza rag:{ \"query\": \"Qual é a fruta favorita de [nome do usuário]?\" } \n(Após obter a resposta da ferramenta \"rag\")\nAgente: \"Sua fruta favorita é banana.\"\n\n**Exemplo 2:\nUsuário: \"Meu nome é João, e tenho 25 anos.\"\nAgente utiliza 'salva_rag': { \"rag\": \"*nome: João\n*idade: 25 anos\", \"rag_id\": \"sessionId789\", \"usuario\": \"João\", \"tags\": [\"informações pessoais\"] } \nAgente: \"Informações salvas.\""
         }
       },
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
       "position": [
-        440,
-        0
+        880,
+        -20
       ],
       "id": "2c0a0e14-0126-4d10-9b9f-5dc73ef09d55",
       "name": "Agente_Fanya"
@@ -91,14 +97,14 @@
       "parameters": {
         "sessionIdType": "customKey",
         "sessionKey": "={{ $json.sessionId }}",
-        "tableName": "chat_historico",
+        "tableName": "chat",
         "contextWindowLength": 10
       },
       "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
       "typeVersion": 1.3,
       "position": [
-        340,
-        240
+        660,
+        280
       ],
       "id": "8c51e716-bead-452f-a09e-65c94e294683",
       "name": "Memoria",
@@ -111,23 +117,63 @@
     },
     {
       "parameters": {
-        "name": "armazena_memoria",
-        "description": "1.  **Crie um input 'memoria':** Utilize a ferramenta para criar ou atualizar um markdown na memória de seção. O input para essa ferramenta deve ser chamado de 'memoria'.\n2.  **Armazene informações novas e relevantes:** O input 'memoria' deve conter informações fornecidas pelo usuário que você não tinha conhecimento prévio. Inclua detalhes importantes da conversa, como:\n    *   **Preferências do usuário:** Registre todas as preferências expressas, como nomes preferidos (ex: '* Nome preferido: Rick'), gostos (ex: '* Preferência: Restaurantes com música ao vivo') e aversões (ex: '* Aversão: Comida apimentada').\n    *   Informações de contexto (ex: '* Restaurante: Bella Itália').\n    *   Outros dados úteis (ex: '* Alergia: Frutos do mar').\n    *   **Sempre que o usuário expressar uma preferência, utilize a ferramenta `armazena_memoria` para registrá-la.**\n3.  **Atualize a memória:** Se a memória de seção já existir, adicione as novas informações relevantes.\n\n**Importante:** O input 'memoria' deve conter apenas as informações novas fornecidas pelo usuário.",
+        "modelName": "models/text-embedding-004"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1080,
+        420
+      ],
+      "id": "01dde430-5877-4414-b08b-49eb94a4bb5a",
+      "name": "embedding_Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "sy3Js58bYOpGFuit",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "salva_rag",
+        "description": "=Utilize esta ferramenta para salvar informações na base de conhecimento.\n**Importante, considere :\n'{{ $json.rag_secao }}' \ne também:\n'{{ $json.chatInput }}'\npara definir o rag completo da seção, para ser armazenado.\n\nParâmetros:\n- rag (string): O conteúdo a ser salvo em formato markdown, pense na formatação para ficar légivel para humanos.\n- rag_id (string): O identificador único do conteúdo.\n- usuario (string): O nome do usuário dono da informação.\n\nExemplos:\n\nEntrada do usuário: \"Meu nome é Carlos, e meu email é carlos@exemplo.com.\"\n\nSaída do agente utilizando salva_rag:\n{\n\"rag\": \"*nome: Carlos *email: carlos@exemplo.com\",\n\"rag_id\": \"sessionId456\",\n\"usuario\": \"Carlos\",\n\"tags\": [\"informações pessoais\"]\n}\n\n\nEntrada do usuário: \"Encontrei este artigo interessante: www.exemplo.com/artigo\"\n\nSaída do agente utilizando salva_rag:\n{\n\"rag\": \"*Conteúdo do artigo convertido para markdown*\",\n\"rag_id\": \"www.exemplo.com/artigo\",\n\"usuario\": \"Anônimo\",\n\"tags\": [\"artigo\", \"webscrape\"]\n}\n",
         "workflowId": {
           "__rl": true,
-          "value": "gKYt3StosfVMLp9p",
+          "value": "yXNQLvmtaWMIlL1z",
           "mode": "list",
-          "cachedResultName": "Fanya — armazena_memoria"
+          "cachedResultName": "Fanya — RAG"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
-            "usuario": "={{ $json.usuario }}",
-            "sessionId": "={{ $json.sessionId }}",
-            "memoria": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('memoria', ``, 'string') }}"
+            "rag_id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('rag_id', `Identificador único do conteúdo. Se for um chat, use o sessionId. Se for um webscrape, use a URL. Se não for possível identificar, gere uma chave aleatória de 10 caracteres.`, 'string') }}",
+            "usuario": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('usuario', `Nome do usuário dono da informação. Se não for especificado, use 'Anônimo'.`, 'string') }}",
+            "rag": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('rag', `Conteúdo principal a ser armazenado na base de conhecimento. Deve ser formatado em markdown. Caso não encontre um valor para rag utilizar 'erro em RAG'.`, 'string') }}",
+            "tags": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('tags', `um string que represente as tags para categorizar o conteúdo, você não precisa categorizar o rag em uma única tag, pode informar um string que represente um array com as tags do rag. Coloque cada tag entre colchetes e separada por virgula, com a tag entre aspas, mesmo se houver uma única tag, coloque entre colchetes e entre aspas, no formato: [ \"tag1\", \"tag2\", \"tag3\" ].`, 'string') }}"
           },
           "matchingColumns": [],
           "schema": [
+            {
+              "id": "rag",
+              "displayName": "rag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "rag_id",
+              "displayName": "rag_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
             {
               "id": "usuario",
               "displayName": "usuario",
@@ -135,25 +181,18 @@
               "defaultMatch": false,
               "display": true,
               "canBeUsedToMatch": true,
-              "type": "string"
+              "type": "string",
+              "removed": false
             },
             {
-              "id": "memoria",
-              "displayName": "memoria",
+              "id": "tags",
+              "displayName": "tags",
               "required": false,
               "defaultMatch": false,
               "display": true,
               "canBeUsedToMatch": true,
-              "type": "string"
-            },
-            {
-              "id": "sessionId",
-              "displayName": "sessionId",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string"
+              "type": "array",
+              "removed": false
             }
           ],
           "attemptToConvertTypes": false,
@@ -163,18 +202,18 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2,
       "position": [
-        520,
-        240
+        820,
+        280
       ],
       "id": "76fbf4d6-abc9-47a0-9d29-eae9d482492f",
-      "name": "armazena_memoria"
+      "name": "salva_rag"
     },
     {
       "parameters": {
         "mode": "retrieve-as-tool",
-        "toolName": "rag_memoria",
-        "toolDescription": "1.  **Busque informações relevantes:** Utilize a ferramenta para buscar mensagens relevantes em `rag_memoria`.\n2.  **Analise e priorize:** Examine os resultados da busca, focando nas informações que respondem à pergunta do usuário.\n3.  **Responda à pergunta:** Utilize as informações encontradas para fornecer uma resposta clara e concisa ao usuário.\n\n## Exemplo:\n\n**Usuário:** \"Qual é a capital da França?\"\n\n**Agente:** (Verifica se possui a informação. Não possui.)\n\n(Utiliza a ferramenta `rag_memoria` para buscar em `rag_memoria`.)\n\n(Encontra a informação: \"A capital da França é Paris.\")\n\n**Agente:** \"A capital da França é Paris.\"",
-        "tableName": "rag_memoria",
+        "toolName": "rag",
+        "toolDescription": "Utilize esta ferramenta para buscar informações na base de conhecimento.\n\nParâmetros:\n- query (string): A pergunta ou consulta para buscar informações relevantes.\n\nExemplo:\nEntrada do usuário: \"Qual é o meu endereço?\"\nSaída do agente utilizando rag:  { \"query\": \"Qual é o endereço de [nome do usuário]?\" } \nAgente recebe informações revelantes de rag interpreta e devolve endereço ao usuário.",
+        "tableName": "rag",
         "topK": 5,
         "options": {
           "metadata": {
@@ -190,11 +229,11 @@
       "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
       "typeVersion": 1,
       "position": [
-        760,
-        180
+        1160,
+        260
       ],
       "id": "7667b459-ac5f-4878-a65a-ebcaedb3e08a",
-      "name": "rag_memoria",
+      "name": "rag",
       "credentials": {
         "postgres": {
           "id": "SalbNlZHCmfksUuw",
@@ -204,22 +243,41 @@
     },
     {
       "parameters": {
-        "modelName": "models/text-embedding-004"
+        "operation": "executeQuery",
+        "query": "SELECT COALESCE((SELECT text FROM rag WHERE metadata->>'rag_id' LIKE '%' || $1 || '%'), '') AS rag_secao;",
+        "options": {
+          "queryReplacement": "={{ $json.sessionId }}"
+        }
       },
-      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
       "position": [
-        880,
-        280
+        260,
+        80
       ],
-      "id": "01dde430-5877-4414-b08b-49eb94a4bb5a",
-      "name": "embedding_Gemini",
+      "id": "db1c38d4-3e16-4a7e-a807-ceed15fb3c57",
+      "name": "rag_secao",
       "credentials": {
-        "googlePalmApi": {
-          "id": "sy3Js58bYOpGFuit",
-          "name": "Google Gemini(PaLM) Api account 2"
+        "postgres": {
+          "id": "SalbNlZHCmfksUuw",
+          "name": "Postgres_Supabase"
         }
       }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        440,
+        -20
+      ],
+      "id": "e6b8f805-73f4-4385-9ba0-59a6fa0f9bcd",
+      "name": "Merge"
     }
   ],
   "pinData": {},
@@ -228,7 +286,12 @@
       "main": [
         [
           {
-            "node": "usuario",
+            "node": "rag_secao",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
             "type": "main",
             "index": 0
           }
@@ -268,34 +331,56 @@
         ]
       ]
     },
-    "armazena_memoria": {
-      "ai_tool": [
-        [
-          {
-            "node": "Agente_Fanya",
-            "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "rag_memoria": {
-      "ai_tool": [
-        [
-          {
-            "node": "Agente_Fanya",
-            "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "embedding_Gemini": {
       "ai_embedding": [
         [
           {
-            "node": "rag_memoria",
+            "node": "rag",
             "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "salva_rag": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente_Fanya",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "rag": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente_Fanya",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "rag_secao": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "usuario",
+            "type": "main",
             "index": 0
           }
         ]
@@ -306,7 +391,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "535a59d6-45f6-4b1b-832a-066fb72123a7",
+  "versionId": "7e679e4f-b454-4abf-bd4d-4c6292cf8177",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "22c369649ec2dd9683616dd9b552ef417417993d72f05d02349adbd045ce12fb"
